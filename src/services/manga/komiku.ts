@@ -65,8 +65,42 @@ function parseCards(html: string): ParsedCard[] {
   const $ = load(html);
   const cards: ParsedCard[] = [];
 
-  $(".bge").each((_, element) => {
+  $("article.ls2, article.ls4, article, .bge").each((_, element) => {
     const card = $(element);
+
+    if (card.is("article") || card.hasClass("ls2") || card.hasClass("ls4")) {
+      const link = card.find(".ls2j h3 a, .ls2v a, h3 a, a").first();
+      const href = absolute(link.attr("href"));
+      if (!href || !href.includes("/manga/")) return;
+
+      const title = card.find(".ls2j h3, h3").first().text().replace(/\s+/g, " ").trim();
+      if (!title) return;
+
+      const genreText = card.find(".ls2t").first().text().replace(/\s+/g, " ").trim();
+      const genres = genreText ? genreText.split(",").map((item) => item.trim()).filter(Boolean) : [];
+
+      const latest = card.find(".ls2l").first().text().replace(/\s+/g, " ").trim();
+      const imgEl = card.find(".ls2v img, img").first();
+      const image = safeHttpUrl(imgEl.attr("data-src") ?? imgEl.attr("src"));
+
+      const flagSrc = card.find("img.flag").attr("src") || "";
+      let kind: string | undefined;
+      if (flagSrc.includes("kr")) kind = "Manhwa";
+      else if (flagSrc.includes("jp")) kind = "Manga";
+      else if (flagSrc.includes("cn")) kind = "Manhua";
+
+      cards.push({
+        title,
+        href,
+        image,
+        genres,
+        kind,
+        synopsis: undefined,
+        latestChapter: latest || undefined
+      });
+      return;
+    }
+
     const link = card.find(".bgei a, .kan h3 a").first();
     const href = absolute(link.attr("href"));
     if (!href || !href.includes("/manga/")) return;
@@ -298,10 +332,16 @@ export async function getGenres(): Promise<MangaGenre[]> {
   });
 }
 
+export async function getChapters(slug: string): Promise<Paginated<MangaChapter>> {
+  const detail = await getDetail(slug);
+  return { items: detail.chapters, page: 0, hasMore: false };
+}
+
 export const komiku = {
   getCatalog,
   getSearch,
   getDetail,
+  getChapters,
   getReader,
   getGenres
 };

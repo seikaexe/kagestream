@@ -21,10 +21,12 @@ function toUrl(params: { q?: string; genre?: string; status?: string; sort?: str
   if (params.status) search.set("status", params.status);
   if (params.sort) search.set("sort", params.sort);
   return `/anime?${search.toString()}`;
-}export default async function AnimeCatalogPage({ searchParams }: { searchParams: Promise<Query> }) {
+}
+
+export default async function AnimeCatalogPage({ searchParams }: { searchParams: Promise<Query> }) {
   const params = animeCatalogQuerySchema.parse(await searchParams);
   const [result, genres] = await Promise.all([
-    getAnimeCatalog(params),
+    getAnimeCatalog(params).catch(() => ({ items: [], page: params.page, hasMore: false })),
     getAnimeGenres().catch(() => [])
   ]);
 
@@ -52,12 +54,13 @@ function toUrl(params: { q?: string; genre?: string; status?: string; sort?: str
           <span className="text-xs font-medium text-muted">Genre</span>
           <select
             name="genre"
+            defaultValue={params.genre}
             aria-label="Filter genre"
             className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
           >
             <option value="">Semua genre</option>
             {genres.map((genre) => (
-              <option key={genre.id} value={genre.name} selected={params.genre === genre.name}>
+              <option key={genre.id} value={genre.name}>
                 {genre.name}
               </option>
             ))}
@@ -67,6 +70,7 @@ function toUrl(params: { q?: string; genre?: string; status?: string; sort?: str
           <span className="text-xs font-medium text-muted">Status</span>
           <select
             name="status"
+            defaultValue={params.status}
             aria-label="Filter status"
             className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
           >
@@ -77,7 +81,7 @@ function toUrl(params: { q?: string; genre?: string; status?: string; sort?: str
               { value: "Belum Tayang", label: "Belum tayang" },
               { value: "Hiatus", label: "Hiatus" }
             ].map((option) => (
-              <option key={option.value} value={option.value} selected={params.status === option.value}>
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -87,11 +91,12 @@ function toUrl(params: { q?: string; genre?: string; status?: string; sort?: str
           <span className="text-xs font-medium text-muted">Urutkan</span>
           <select
             name="sort"
+            defaultValue={params.sort}
             aria-label="Urutkan"
             className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
           >
             {ANIME_SORTS.map((sort) => (
-              <option key={sort.id} value={sort.id} selected={params.sort === sort.id}>
+              <option key={sort.id} value={sort.id}>
                 {sort.label}
               </option>
             ))}

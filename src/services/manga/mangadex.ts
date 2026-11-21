@@ -122,6 +122,18 @@ const LANGUAGE_LABELS: Record<string, string> = {
   ja: "日本語"
 };
 
+const MANGADEX_USER_AGENT = "Kagenime/1.0.0 (https://github.com/seikaexe/kagestream)";
+
+function requestOptions(extra: Record<string, string> = {}) {
+  return {
+    source: SOURCE,
+    headers: {
+      "User-Agent": MANGADEX_USER_AGENT,
+      ...extra
+    }
+  };
+}
+
 function api(path: string): string {
   return `${env.MANGADEX_API_URL.replace(/\/$/, "")}${path}`;
 }
@@ -207,7 +219,7 @@ export async function getCatalog(params: MangaCatalogParams = {}): Promise<Pagin
   const key = `mangadex:catalog:${page}:${language}:${params.keyword ?? ""}:${params.genre ?? ""}`;
 
   return cached(key, env.CACHE_TTL_SECONDS, async () => {
-    const parsed = await fetchJson(api(`/manga?${query.toString()}`), mangaListSchema, { source: SOURCE });
+    const parsed = await fetchJson(api(`/manga?${query.toString()}`), mangaListSchema, requestOptions());
     return {
       items: parsed.data.map(mapManga),
       page,
@@ -228,7 +240,7 @@ export async function search(keyword: string, language = "id", limit = 12): Prom
     query.append("contentRating[]", "safe");
     query.append("contentRating[]", "suggestive");
     query.append("availableTranslatedLanguage[]", language);
-    const parsed = await fetchJson(api(`/manga?${query.toString()}`), mangaListSchema, { source: SOURCE });
+    const parsed = await fetchJson(api(`/manga?${query.toString()}`), mangaListSchema, requestOptions());
     return parsed.data.map(mapManga);
   });
 }
@@ -239,7 +251,7 @@ export async function getDetail(id: string, language = "id"): Promise<MangaDetai
       fetchJson(
         api(`/manga/${encodeURIComponent(id)}?includes[]=cover_art&includes[]=author&includes[]=artist`),
         mangaResponseSchema,
-        { source: SOURCE }
+        requestOptions()
       ),
       getChapters(id, language)
     ]);
@@ -269,7 +281,7 @@ export async function getChapters(id: string, language = "id"): Promise<Paginate
   const parsed = await fetchJson(
     api(`/manga/${encodeURIComponent(id)}/feed?${query.toString()}`),
     chapterListSchema,
-    { source: SOURCE }
+    requestOptions()
   );
 
   return {
@@ -285,12 +297,14 @@ export async function getReader(chapterId: string): Promise<MangaReader> {
     const chapter = await fetchJson(
       api(`/chapter/${encodeURIComponent(chapterId)}?includes[]=scanlation_group&includes[]=manga`),
       chapterResponseSchema,
-      { source: SOURCE }
+      requestOptions()
     );
     const mangaId = chapter.data.relationships.find((rel) => rel.type === "manga")?.id ?? "";
-    const atHome = await fetchJson(api(`/at-home/server/${encodeURIComponent(chapterId)}`), atHomeSchema, {
-      source: SOURCE
-    });
+    const atHome = await fetchJson(
+      api(`/at-home/server/${encodeURIComponent(chapterId)}`),
+      atHomeSchema,
+      requestOptions()
+    );
 
     const base = atHome.baseUrl.replace(/\/$/, "");
     const hash = atHome.chapter.hash;
@@ -314,7 +328,7 @@ export async function getReader(chapterId: string): Promise<MangaReader> {
 
 export async function getGenres(): Promise<MangaGenre[]> {
   return cached("mangadex:genres", 60 * 60 * 24, async () => {
-    const parsed = await fetchJson(api("/manga/tag"), tagsSchema, { source: SOURCE });
+    const parsed = await fetchJson(api("/manga/tag"), tagsSchema, requestOptions());
     return parsed.data
       .filter((tag) => tag.attributes.group === "genre")
       .map((tag) => ({

@@ -38,7 +38,7 @@ export async function getSkipTimes(
   return cached(key, 60 * 60 * 12, async () => {
     const query = new URLSearchParams({ types: "op" });
     query.append("types", "ed");
-    if (episodeLength && episodeLength > 0) query.set("episodeLength", String(episodeLength));
+    query.set("episodeLength", String(episodeLength && episodeLength > 0 ? episodeLength : 0));
 
     try {
       const parsed = await fetchJson(

@@ -132,7 +132,35 @@ export async function getAnimeHome(): Promise<AnimeHomeData> {
 }
 
 export async function getAnimeCatalog(params: AnimeCatalogParams): Promise<Paginated<AnimeSummary>> {
-  return animein.getCatalog(params);
+  try {
+    const catalog = await animein.getCatalog(params);
+    if (catalog.items.length > 0) return catalog;
+  } catch {
+    // If Animein source fails or is blocked, degrade gracefully to AniList
+  }
+
+  const page = Math.max(0, params.page ?? 0);
+  const keyword = (params.keyword || (params as { q?: string }).q || "").trim();
+
+  if (keyword) {
+    try {
+      const items = await anilist.searchMedia(keyword, 30);
+      return { items, page, hasMore: false };
+    } catch {
+      return { items: [], page, hasMore: false };
+    }
+  }
+
+  try {
+    if (params.sort === "newest") {
+      const items = await anilist.getTrending(page, 30);
+      return { items, page, hasMore: items.length >= 30 };
+    }
+    const items = await anilist.getPopular(page, 30);
+    return { items, page, hasMore: items.length >= 30 };
+  } catch {
+    return { items: [], page, hasMore: false };
+  }
 }
 
 export async function getAnimeDetail(id: string): Promise<AnimeDetail> {

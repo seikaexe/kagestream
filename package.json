@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:scrapers": "tsx scripts/test-scrapers.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.108.2",
@@ -28,6 +29,7 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.6",
     "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }

@@ -216,7 +216,7 @@ export async function getHome(): Promise<AnimeinHome> {
 export async function getCatalog(params: AnimeCatalogParams = {}): Promise<Paginated<AnimeSummary>> {
   const page = Math.max(0, params.page ?? 0);
   const sort = params.sort ?? "views";
-  const keyword = (params.keyword ?? "").trim();
+  const keyword = (params.keyword ?? (params as { q?: string }).q ?? "").trim();
   const genre = (params.genre ?? "").trim();
   const key = `animein:catalog:${page}:${sort}:${keyword}:${genre}`;
 

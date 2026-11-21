@@ -232,9 +232,23 @@ export async function getDetail(
   id: string,
   options: { kind?: WebtoonKind; genre?: string; slug?: string; episode?: number } = {}
 ): Promise<WebtoonDetail> {
-  const kind = options.kind ?? "original";
-  const genre = options.genre?.trim() || (kind === "canvas" ? "canvas" : "");
-  const slug = options.slug?.trim();
+  let kind = options.kind ?? "original";
+  let genre = options.genre?.trim() || (kind === "canvas" ? "canvas" : "");
+  let slug = options.slug?.trim();
+
+  if (!slug || !genre) {
+    try {
+      const results = await search(id);
+      const match = results.find((item) => item.id === id) ?? results[0];
+      if (match) {
+        kind = match.kind;
+        genre = match.genre;
+        slug = match.slug;
+      }
+    } catch {
+      // Fall through to error check
+    }
+  }
 
   if (!slug || !genre) {
     throw new SourceError(SOURCE, "Tautan webtoon tidak lengkap. Buka judul dari katalog.", {
